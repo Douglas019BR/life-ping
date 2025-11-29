@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { UserService } from '../services/user.service';
 import { CreateUserSchema, UpdateUserSchema } from '../models/user.types';
+import { ZodError } from 'zod';
 
 export class UserController {
   private userService: UserService;
@@ -14,8 +15,11 @@ export class UserController {
       const data = CreateUserSchema.parse(req.body);
       const user = await this.userService.createUser(data);
       res.status(201).json(user);
-    } catch (error: any) {
-      res.status(400).json({ error: error.message });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      res.status(400).json({ error: (error as Error).message });
     }
   };
 
@@ -23,8 +27,8 @@ export class UserController {
     try {
       const users = await this.userService.getAllUsers();
       res.json(users);
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
     }
   };
 
@@ -32,8 +36,8 @@ export class UserController {
     try {
       const user = await this.userService.getUserById(req.params.id);
       res.json(user);
-    } catch (error: any) {
-      res.status(404).json({ error: error.message });
+    } catch (error) {
+      res.status(404).json({ error: (error as Error).message });
     }
   };
 
@@ -42,8 +46,11 @@ export class UserController {
       const data = UpdateUserSchema.parse(req.body);
       const user = await this.userService.updateUser(req.params.id, data);
       res.json(user);
-    } catch (error: any) {
-      res.status(400).json({ error: error.message });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      res.status(400).json({ error: (error as Error).message });
     }
   };
 
@@ -51,8 +58,8 @@ export class UserController {
     try {
       await this.userService.deleteUser(req.params.id);
       res.status(204).send();
-    } catch (error: any) {
-      res.status(404).json({ error: error.message });
+    } catch (error) {
+      res.status(404).json({ error: (error as Error).message });
     }
   };
 }
