@@ -1,0 +1,96 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String   @id @default(uuid())
+  name           String
+  whatsapp       String   @unique
+  customMessage  String?  @map("custom_message")
+  checkTime      String   @default("14:00") @map("check_time")
+  isActive       Boolean  @default(true) @map("is_active")
+  paymentStatus  String   @default("pending") @map("payment_status")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  emergencyContacts EmergencyContact[]
+  dailyChecks       DailyCheck[]
+  alerts            Alert[]
+
+  @@index([whatsapp])
+  @@index([isActive])
+  @@index([checkTime])
+  @@map("users")
+}
+
+model EmergencyContact {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  name      String
+  whatsapp  String
+  order     Int
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  alertNotifications AlertNotification[]
+
+  @@unique([userId, order])
+  @@index([userId])
+  @@map("emergency_contacts")
+}
+
+model DailyCheck {
+  id          String    @id @default(uuid())
+  userId      String    @map("user_id")
+  sentAt      DateTime  @map("sent_at")
+  response    String?
+  respondedAt DateTime? @map("responded_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, sentAt])
+  @@index([userId])
+  @@index([sentAt])
+  @@map("daily_checks")
+}
+
+model Alert {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  triggerType String   @map("trigger_type")
+  messageSent String   @map("message_sent")
+  triggeredAt DateTime @map("triggered_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  alertNotifications AlertNotification[]
+
+  @@index([userId])
+  @@index([triggeredAt])
+  @@map("alerts")
+}
+
+model AlertNotification {
+  id                 String    @id @default(uuid())
+  alertId            String    @map("alert_id")
+  emergencyContactId String    @map("emergency_contact_id")
+  status             String    @default("pending")
+  sentAt             DateTime? @map("sent_at")
+  errorMessage       String?   @map("error_message")
+  retryCount         Int       @default(0) @map("retry_count")
+  createdAt          DateTime  @default(now()) @map("created_at")
+
+  alert            Alert            @relation(fields: [alertId], references: [id], onDelete: Cascade)
+  emergencyContact EmergencyContact @relation(fields: [emergencyContactId], references: [id], onDelete: Cascade)
+
+  @@index([alertId])
+  @@index([status])
+  @@map("alert_notifications")
+}
