@@ -1,6 +1,7 @@
 import express from 'express';
 import { env } from './config/env';
 import prisma from './config/database';
+import userRoutes from './routes/user.routes';
 
 const app = express();
 
@@ -18,6 +19,8 @@ app.get('/health/db', async (req, res) => {
     res.status(500).json({ status: 'error', database: 'disconnected' });
   }
 });
+
+app.use('/users', userRoutes);
 
 app.listen(env.port, () => {
   console.log(`🚀 Server running on port ${env.port}`);
