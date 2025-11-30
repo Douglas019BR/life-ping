@@ -1,7 +1,9 @@
+import 'express-async-errors';
 import express from 'express';
 import { env } from './config/env';
 import prisma from './config/database';
 import userRoutes from './routes/user.routes';
+import errorHandler from './middlewares/errorHandler';
 
 const app = express();
 
@@ -12,15 +14,13 @@ app.get('/health', (req, res) => {
 });
 
 app.get('/health/db', async (req, res) => {
-  try {
-    await prisma.$queryRaw`SELECT 1`;
-    res.json({ status: 'ok', database: 'connected' });
-  } catch (error) {
-    res.status(500).json({ status: 'error', database: 'disconnected' });
-  }
+  await prisma.$queryRaw`SELECT 1`;
+  res.json({ status: 'ok', database: 'connected' });
 });
 
 app.use('/users', userRoutes);
+
+app.use(errorHandler);
 
 app.listen(env.port, () => {
   console.log(`🚀 Server running on port ${env.port}`);
