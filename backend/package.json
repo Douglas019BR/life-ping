@@ -17,7 +17,7 @@
     "format:check": "prettier --check \"src/**/*.ts\""
   },
   "keywords": [],
-  "author": "",
+  "author": "Douglas Sermarini",
   "license": "ISC",
   "dependencies": {
     "@prisma/client": "^5.22.0",

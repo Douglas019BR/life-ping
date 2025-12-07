@@ -30,10 +30,13 @@ export class UserService {
   }
 
   async updateUser(id: string, data: UpdateUserDTO) {
-    // The repository/prisma will throw an error if the user is not found (P2025)
-    // which will be caught by the centralized error handler.
-    // This avoids a redundant SELECT call.
-    return this.userRepository.update(id, data);
+  if (data.whatsapp) {
+    const existingUser = await this.userRepository.findByWhatsapp(data.whatsapp);
+    if (existingUser && existingUser.id !== id) {
+      throw new AppError('WhatsApp already registered', 409);
+    }
+  }
+  return this.userRepository.update(id, data);
   }
 
   async deleteUser(id: string) {
