@@ -1,0 +1,84 @@
+classDiagram
+    class User {
+        +UUID id
+        +String name
+        +String whatsapp
+        +String customMessage
+        +Time checkTime
+        +Boolean isActive
+        +PaymentStatus paymentStatus
+        +Timestamp createdAt
+        +Timestamp updatedAt
+    }
+
+    class EmergencyContact {
+        +UUID id
+        +UUID userId
+        +String name
+        +String whatsapp
+        +Integer order
+        +Timestamp createdAt
+        +Timestamp updatedAt
+    }
+
+    class DailyCheck {
+        +UUID id
+        +UUID userId
+        +Timestamp sentAt
+        +ResponseType response
+        +Timestamp respondedAt
+        +Timestamp createdAt
+    }
+
+    class Alert {
+        +UUID id
+        +UUID userId
+        +TriggerType triggerType
+        +String messageSent
+        +Timestamp triggeredAt
+        +Timestamp createdAt
+    }
+
+    class AlertNotification {
+        +UUID id
+        +UUID alertId
+        +UUID emergencyContactId
+        +NotificationStatus status
+        +Timestamp sentAt
+        +String errorMessage
+        +Integer retryCount
+        +Timestamp createdAt
+    }
+
+    User "1" --> "1..3" EmergencyContact : has
+    User "1" --> "0..*" DailyCheck : receives
+    User "1" --> "0..*" Alert : triggers
+    Alert "1" --> "1..*" AlertNotification : generates
+    AlertNotification "*" --> "1" EmergencyContact : sent to
+
+    class PaymentStatus {
+        <<enumeration>>
+        PENDING
+        CONFIRMED
+        FAILED
+    }
+
+    class ResponseType {
+        <<enumeration>>
+        OK
+        HELP
+        NO_RESPONSE
+    }
+
+    class TriggerType {
+        <<enumeration>>
+        DAILY_CHECK
+        MANUAL
+    }
+
+    class NotificationStatus {
+        <<enumeration>>
+        PENDING
+        SENT
+        FAILED
+    }
