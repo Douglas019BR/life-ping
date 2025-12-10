@@ -2,6 +2,7 @@ import 'express-async-errors';
 import express from 'express';
 import { env } from './config/env';
 import prisma from './config/database';
+import EmergencyContactRoutes from './routes/emergencyContact.routes';
 import userRoutes from './routes/user.routes';
 import errorHandler from './middlewares/errorHandler';
 
@@ -19,6 +20,7 @@ app.get('/health/db', async (req, res) => {
 });
 
 app.use('/users', userRoutes);
+app.use('/emergency-contacts', EmergencyContactRoutes);
 
 app.use(errorHandler);
 

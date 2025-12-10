@@ -1,5 +1,9 @@
 import prisma from '../config/database';
-import { CreateEmergencyContactDTO, UpdateEmergencyContactDTO } from '../models/emergencyContacts.types';
+import {
+  CreateEmergencyContactDTO,
+  UpdateEmergencyContactDTO,
+} from '../models/emergencyContacts.types';
+import { Prisma } from '@prisma/client';
 
 export class EmergencyContactRepository {
   async create(data: CreateEmergencyContactDTO) {
@@ -16,12 +20,26 @@ export class EmergencyContactRepository {
     });
   }
 
+  async findFirst(args: Prisma.EmergencyContactFindFirstArgs) {
+    return prisma.emergencyContact.findFirst(args);
+  }
+
   async findByWhatsapp(whatsapp: string) {
-    return prisma.emergencyContact.findUnique({ where: { whatsapp } });
+    return prisma.emergencyContact.findMany({ where: { whatsapp } });
   }
 
   async findByUserId(userId: string) {
     return prisma.emergencyContact.findMany({ where: { userId } });
+  }
+
+  async findByUserIdAndOrder(userId: string, order: number) {
+    return prisma.emergencyContact.findFirst({
+      where: { userId, order },
+    });
+  }
+
+  async countContactsByUserId(userId: string) {
+    return prisma.emergencyContact.count({ where: { userId } });
   }
 
   async update(id: string, data: UpdateEmergencyContactDTO) {

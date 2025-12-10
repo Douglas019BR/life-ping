@@ -1,6 +1,10 @@
 import { Request, Response } from 'express';
 import { EmergencyContactService } from '../services/emergencyContact.service';
-import { CreateEmergencyContactSchema, UpdateEmergencyContactSchema } from '../models/emergencyContacts.types';
+import {
+  CreateEmergencyContactSchema,
+  UpdateEmergencyContactSchema,
+  UpdateMultipleEmergencyContactsSchema,
+} from '../models/emergencyContacts.types';
 
 export class EmergencyContactController {
   private emergencyContactService: EmergencyContactService;
@@ -21,19 +25,33 @@ export class EmergencyContactController {
   };
 
   getById = async (req: Request, res: Response) => {
-    const emergencyContact = await this.emergencyContactService.getEmergencyContactById(req.params.id);
+    const emergencyContact = await this.emergencyContactService.getEmergencyContactById(
+      req.params.id
+    );
     res.json(emergencyContact);
   };
 
   getByUserId = async (req: Request, res: Response) => {
-    const emergencyContacts = await this.emergencyContactService.getEmergencyContactsByUserId(req.params.userId);
+    const emergencyContacts = await this.emergencyContactService.getEmergencyContactsByUserId(
+      req.params.userId
+    );
     res.json(emergencyContacts);
   };
 
   update = async (req: Request, res: Response) => {
     const data = UpdateEmergencyContactSchema.parse(req.body);
-    const emergencyContact = await this.emergencyContactService.updateEmergencyContact(req.params.id, data);
+    const emergencyContact = await this.emergencyContactService.updateEmergencyContact(
+      req.params.id,
+      data
+    );
     res.json(emergencyContact);
+  };
+
+  updateMultiple = async (req: Request, res: Response) => {
+    const data = UpdateMultipleEmergencyContactsSchema.parse(req.body);
+    const emergencyContacts =
+      await this.emergencyContactService.updateMultipleEmergencyContacts(data);
+    res.json(emergencyContacts);
   };
 
   delete = async (req: Request, res: Response) => {
