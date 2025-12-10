@@ -70,8 +70,14 @@ export class EmergencyContactService {
       throw new AppError('Duplicate orders are not allowed', 409);
     }
 
-    // This is not fully atomic, but it's a trade-off for simplicity
-    // A more robust solution would involve a database transaction
+    // Validate all contacts exist first
+    for (const contact of data.contacts) {
+      const exists = await this.emergencyContactRepository.findById(contact.id);
+      if (!exists) {
+        throw new AppError(`Emergency contact with id ${contact.id} not found.`, 404);
+      }
+    }
+
     return Promise.all(
       data.contacts.map((contact) =>
         this.emergencyContactRepository.update(contact.id, {
