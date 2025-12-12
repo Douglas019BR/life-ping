@@ -228,42 +228,23 @@ describe('EmergencyContactService', () => {
   });
 
   describe('updateMultipleEmergencyContacts', () => {
-    it('should update multiple contacts successfully', async () => {
+    const userId = '123';
+    it('should update multiple contacts successfully within a transaction', async () => {
       const contactsToUpdate = {
         contacts: [
           { id: '1', name: 'Contact 1', whatsapp: '111', order: 1 },
           { id: '2', name: 'Contact 2', whatsapp: '222', order: 2 },
         ],
       };
+      const updatedContacts = contactsToUpdate.contacts.map(c => ({ ...c, userId, createdAt: new Date(), updatedAt: new Date() }));
 
-      prismaMock.emergencyContact.findMany.mockResolvedValue(
-        contactsToUpdate.contacts.map((contact) => ({
-          ...contact,
-          userId: '123',
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        } as EmergencyContact))
-      );
+      prismaMock.emergencyContact.findMany.mockResolvedValue(updatedContacts);
+      prismaMock.$transaction.mockResolvedValue(updatedContacts);
 
-      prismaMock.emergencyContact.update.mockImplementation((args) => {
-        const id = args.where.id as string;
-        const contactData = contactsToUpdate.contacts.find((c) => c.id === id);
-        const promise = new Promise((resolve) => {
-          resolve({
-            ...contactData,
-            id,
-            userId: '123',
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          } as EmergencyContact);
-        }) as any;
-        return promise;
-      });
-
-      const result = await service.updateMultipleEmergencyContacts(contactsToUpdate);
+      const result = await service.updateMultipleEmergencyContacts(contactsToUpdate, userId);
 
       expect(result.length).toBe(2);
-      expect(prismaMock.emergencyContact.update).toHaveBeenCalledTimes(2);
+      expect(prismaMock.$transaction).toHaveBeenCalledWith(expect.any(Array));
     });
 
     it('should throw an error for duplicate orders', async () => {
@@ -274,7 +255,7 @@ describe('EmergencyContactService', () => {
         ],
       };
 
-      await expect(service.updateMultipleEmergencyContacts(contactsToUpdate)).rejects.toThrow(
+      await expect(service.updateMultipleEmergencyContacts(contactsToUpdate, userId)).rejects.toThrow(
         new AppError('Duplicate orders are not allowed', 409)
       );
     });
@@ -288,12 +269,12 @@ describe('EmergencyContactService', () => {
 
       prismaMock.emergencyContact.findMany.mockResolvedValue([]);
 
-      await expect(service.updateMultipleEmergencyContacts(contactsToUpdate)).rejects.toThrow(
+      await expect(service.updateMultipleEmergencyContacts(contactsToUpdate, userId)).rejects.toThrow(
         new AppError('Emergency contact with id non-existent not found', 404)
       );
     });
 
-    it('should throw 403 when contacts belong to different users', async () => {
+    it('should throw 403 when contacts belong to a different user', async () => {
       const contactsToUpdate = {
         contacts: [
           { id: '1', name: 'Contact 1', whatsapp: '111', order: 1 },
@@ -322,9 +303,25 @@ describe('EmergencyContactService', () => {
         },
       ] as EmergencyContact[]);
 
-      await expect(service.updateMultipleEmergencyContacts(contactsToUpdate)).rejects.toThrow(
-        new AppError('All contacts must belong to the same user', 403)
+      await expect(service.updateMultipleEmergencyContacts(contactsToUpdate, userId)).rejects.toThrow(
+        new AppError('All contacts must belong to the specified user', 403)
       );
+    });
+
+    it('should throw an error if the transaction fails', async () => {
+      const contactsToUpdate = {
+        contacts: [
+          { id: '1', name: 'Contact 1', whatsapp: '111', order: 1 },
+          { id: '2', name: 'Contact 2', whatsapp: '222', order: 2 },
+        ],
+      };
+      const updatedContacts = contactsToUpdate.contacts.map(c => ({ ...c, userId, createdAt: new Date(), updatedAt: new Date() }));
+      const error = new Error('Transaction failed');
+
+      prismaMock.emergencyContact.findMany.mockResolvedValue(updatedContacts);
+      prismaMock.$transaction.mockRejectedValue(error);
+
+      await expect(service.updateMultipleEmergencyContacts(contactsToUpdate, userId)).rejects.toThrow(error);
     });
   });
 

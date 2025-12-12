@@ -6,6 +6,7 @@ import {
 } from '../models/emergencyContacts.types';
 import { AppError } from '../errors/AppError';
 import { EmergencyContact } from '@prisma/client';
+import prisma from '../config/database';
 
 export class EmergencyContactService {
   private emergencyContactRepository: EmergencyContactRepository;
@@ -65,42 +66,50 @@ export class EmergencyContactService {
     return this.emergencyContactRepository.update(id, data);
   }
 
-  async updateMultipleEmergencyContacts(data: UpdateMultipleEmergencyContactsDTO) {
+  async updateMultipleEmergencyContacts(
+    data: UpdateMultipleEmergencyContactsDTO,
+    userId: string,
+  ) {
     const orders = data.contacts.map((c) => c.order);
     if (new Set(orders).size !== orders.length) {
       throw new AppError('Duplicate orders are not allowed', 409);
     }
 
     const contactIds = data.contacts.map((contact) => contact.id);
-    const existingContacts = await this.emergencyContactRepository.findManyByIds(contactIds);
+    const existingContacts =
+      await this.emergencyContactRepository.findManyByIds(contactIds);
     const existingIds = new Set(existingContacts.map((c) => c.id));
-    
-    await this.ensureAllContactsExist(contactIds, existingIds);
-    await this.validateAllContactsBelongToSameUser(existingContacts);
 
-    return Promise.all(
+    await this.ensureAllContactsExists(contactIds, existingIds);
+    await this.ensureAllContactsBelongToUser(existingContacts, userId);
+    
+
+    return prisma.$transaction(
       data.contacts.map((contact) =>
-        this.emergencyContactRepository.update(contact.id, {
-          name: contact.name,
-          whatsapp: contact.whatsapp,
-          order: contact.order,
-        })
-      )
+        prisma.emergencyContact.update({
+          where: { id: contact.id },
+          data: {
+            name: contact.name,
+            whatsapp: contact.whatsapp,
+            order: contact.order,
+          },
+        }),
+      ),
     );
   }
 
-  private async validateAllContactsBelongToSameUser(existingContacts: EmergencyContact[]) {
-    const userIds = new Set(existingContacts.map((c) => c.userId));
-    if (userIds.size > 1) {
-      throw new AppError('All contacts must belong to the same user', 403);
+  private async ensureAllContactsExists(contactIds: string[], existingContactsIds: Set<string>) {
+    for (const id of contactIds) {
+      if (!existingContactsIds.has(id)) {
+        throw new AppError(`Emergency contact with id ${id} not found`, 404);
+      }
     }
   }
 
-  private async ensureAllContactsExist(contactIds : string[],existingIds: Set<string>) {
-    for (const id of contactIds) {
-      if (!existingIds.has(id)) {
-        throw new AppError(`Emergency contact with id ${id} not found`, 404);
-      }
+  private async ensureAllContactsBelongToUser(contacts : EmergencyContact[], userId: string) {
+    const invalidContacts = contacts.filter((c) => c.userId !== userId);
+    if (invalidContacts.length > 0) {
+      throw new AppError('All contacts must belong to the specified user', 403);
     }
   }
 
