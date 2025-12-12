@@ -45,7 +45,7 @@ describe('EmergencyContactService', () => {
       prismaMock.emergencyContact.count.mockResolvedValue(3);
 
       await expect(service.createEmergencyContact(contactData)).rejects.toThrow(
-        new AppError('User cannot have more than 3 emergency contacts.', 409)
+        new AppError('User cannot have more than 3 emergency contacts', 409)
       );
     });
 
@@ -61,8 +61,49 @@ describe('EmergencyContactService', () => {
       prismaMock.emergencyContact.findFirst.mockResolvedValue({} as EmergencyContact);
 
       await expect(service.createEmergencyContact(contactData)).rejects.toThrow(
-        new AppError('Emergency contact with this order already exists.', 409)
+        new AppError('Emergency contact with this order already exists', 409)
       );
+    });
+  });
+
+  describe('getAllEmergencyContacts', () => {
+    it('should return all emergency contacts', async () => {
+      const mockContacts: EmergencyContact[] = [
+        {
+          id: '1',
+          userId: '123',
+          name: 'Contact 1',
+          whatsapp: '111',
+          order: 1,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: '2',
+          userId: '456',
+          name: 'Contact 2',
+          whatsapp: '222',
+          order: 2,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ];
+
+      prismaMock.emergencyContact.findMany.mockResolvedValue(mockContacts);
+
+      const result = await service.getAllEmergencyContacts();
+
+      expect(result).toEqual(mockContacts);
+      expect(prismaMock.emergencyContact.findMany).toHaveBeenCalledWith();
+    });
+
+    it('should return empty array when no contacts exist', async () => {
+      prismaMock.emergencyContact.findMany.mockResolvedValue([]);
+
+      const result = await service.getAllEmergencyContacts();
+
+      expect(result).toEqual([]);
+      expect(prismaMock.emergencyContact.findMany).toHaveBeenCalledWith();
     });
   });
 
@@ -92,7 +133,7 @@ describe('EmergencyContactService', () => {
       prismaMock.emergencyContact.findUnique.mockResolvedValue(null);
 
       await expect(service.getEmergencyContactById('1')).rejects.toThrow(
-        new AppError('Emergency contact not found.', 404)
+        new AppError('Emergency contact not found', 404)
       );
     });
   });
@@ -159,6 +200,16 @@ describe('EmergencyContactService', () => {
       });
     });
 
+    it('should throw 404 when emergency contact is not found', async () => {
+      const updateData = { name: 'Updated Name' };
+
+      prismaMock.emergencyContact.findUnique.mockResolvedValue(null);
+
+      await expect(service.updateEmergencyContact('1', updateData)).rejects.toThrow(
+        new AppError('Emergency contact not found', 404)
+      );
+    });
+
     it('should throw an error when order conflicts with existing contact', async () => {
       const updateData = { order: 2 };
 
@@ -171,7 +222,7 @@ describe('EmergencyContactService', () => {
       } as EmergencyContact);
 
       await expect(service.updateEmergencyContact('1', updateData)).rejects.toThrow(
-        new AppError('Emergency contact with this order already exists.', 409)
+        new AppError('Emergency contact with this order already exists', 409)
       );
     });
   });
@@ -185,16 +236,25 @@ describe('EmergencyContactService', () => {
         ],
       };
 
+      prismaMock.emergencyContact.findMany.mockResolvedValue(
+        contactsToUpdate.contacts.map((contact) => ({
+          ...contact,
+          userId: '123',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        } as EmergencyContact))
+      );
+
       prismaMock.emergencyContact.update.mockImplementation((args) => {
         const id = args.where.id as string;
         const contactData = contactsToUpdate.contacts.find((c) => c.id === id);
         const promise = new Promise((resolve) => {
           resolve({
+            ...contactData,
             id,
             userId: '123',
             createdAt: new Date(),
             updatedAt: new Date(),
-            ...contactData,
           } as EmergencyContact);
         }) as any;
         return promise;
@@ -226,10 +286,44 @@ describe('EmergencyContactService', () => {
         ],
       };
 
-      prismaMock.emergencyContact.findUnique.mockResolvedValue(null);
+      prismaMock.emergencyContact.findMany.mockResolvedValue([]);
 
       await expect(service.updateMultipleEmergencyContacts(contactsToUpdate)).rejects.toThrow(
-        new AppError('Emergency contact with id non-existent not found.', 404)
+        new AppError('Emergency contact with id non-existent not found', 404)
+      );
+    });
+
+    it('should throw 403 when contacts belong to different users', async () => {
+      const contactsToUpdate = {
+        contacts: [
+          { id: '1', name: 'Contact 1', whatsapp: '111', order: 1 },
+          { id: '2', name: 'Contact 2', whatsapp: '222', order: 2 },
+        ],
+      };
+
+      prismaMock.emergencyContact.findMany.mockResolvedValue([
+        {
+          id: '1',
+          userId: '123',
+          name: 'Contact 1',
+          whatsapp: '111',
+          order: 1,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: '2',
+          userId: '456', // Different userId
+          name: 'Contact 2',
+          whatsapp: '222',
+          order: 2,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ] as EmergencyContact[]);
+
+      await expect(service.updateMultipleEmergencyContacts(contactsToUpdate)).rejects.toThrow(
+        new AppError('All contacts must belong to the same user', 403)
       );
     });
   });

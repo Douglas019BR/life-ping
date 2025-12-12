@@ -38,6 +38,12 @@ export class EmergencyContactRepository {
     });
   }
 
+  async findManyByIds(ids: string[]) {
+    return prisma.emergencyContact.findMany({
+      where: { id: { in: ids } },
+    });
+  }
+
   async countContactsByUserId(userId: string) {
     return prisma.emergencyContact.count({ where: { userId } });
   }

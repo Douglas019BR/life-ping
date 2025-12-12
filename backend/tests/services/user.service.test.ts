@@ -84,6 +84,7 @@ describe('UserService', () => {
 
       expect(result).toEqual(user);
       expect(prismaMock.user.findUnique).toHaveBeenCalledWith({
+        "include": {"emergencyContacts": true,},
         where: { id: '1' },
       });
     });
@@ -138,7 +139,8 @@ describe('UserService', () => {
         updatedAt: new Date(),
       };
 
-      prismaMock.user.findUnique.mockResolvedValue(existingUser);
+      prismaMock.user.findUnique.mockResolvedValue(existingUser); 
+
 
       await expect(userService.updateUser('1', updateData)).rejects.toThrow(
         new AppError('WhatsApp already registered', 409)

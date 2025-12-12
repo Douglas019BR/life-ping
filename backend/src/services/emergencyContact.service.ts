@@ -5,6 +5,7 @@ import {
   UpdateMultipleEmergencyContactsDTO,
 } from '../models/emergencyContacts.types';
 import { AppError } from '../errors/AppError';
+import { EmergencyContact } from '@prisma/client';
 
 export class EmergencyContactService {
   private emergencyContactRepository: EmergencyContactRepository;
@@ -16,7 +17,7 @@ export class EmergencyContactService {
   async createEmergencyContact(data: CreateEmergencyContactDTO) {
     const contacts = await this.emergencyContactRepository.countContactsByUserId(data.userId);
     if (contacts >= 3) {
-      throw new AppError('User cannot have more than 3 emergency contacts.', 409);
+      throw new AppError('User cannot have more than 3 emergency contacts', 409);
     }
 
     const existingContact = await this.emergencyContactRepository.findFirst({
@@ -24,7 +25,7 @@ export class EmergencyContactService {
     });
 
     if (existingContact) {
-      throw new AppError('Emergency contact with this order already exists.', 409);
+      throw new AppError('Emergency contact with this order already exists', 409);
     }
 
     return this.emergencyContactRepository.create(data);
@@ -37,7 +38,7 @@ export class EmergencyContactService {
   async getEmergencyContactById(id: string) {
     const emergencyContact = await this.emergencyContactRepository.findById(id);
     if (!emergencyContact) {
-      throw new AppError('Emergency contact not found.', 404);
+      throw new AppError('Emergency contact not found', 404);
     }
     return emergencyContact;
   }
@@ -49,7 +50,7 @@ export class EmergencyContactService {
   async updateEmergencyContact(id: string, data: UpdateEmergencyContactDTO) {
     const contact = await this.emergencyContactRepository.findById(id);
     if (!contact) {
-      throw new AppError('Emergency contact not found.', 404);
+      throw new AppError('Emergency contact not found', 404);
     }
 
     if (data.order) {
@@ -57,7 +58,7 @@ export class EmergencyContactService {
         where: { userId: contact.userId, order: data.order, NOT: { id } },
       });
       if (existingContact) {
-        throw new AppError('Emergency contact with this order already exists.', 409);
+        throw new AppError('Emergency contact with this order already exists', 409);
       }
     }
 
@@ -70,13 +71,12 @@ export class EmergencyContactService {
       throw new AppError('Duplicate orders are not allowed', 409);
     }
 
-    // Validate all contacts exist first
-    for (const contact of data.contacts) {
-      const exists = await this.emergencyContactRepository.findById(contact.id);
-      if (!exists) {
-        throw new AppError(`Emergency contact with id ${contact.id} not found.`, 404);
-      }
-    }
+    const contactIds = data.contacts.map((contact) => contact.id);
+    const existingContacts = await this.emergencyContactRepository.findManyByIds(contactIds);
+    const existingIds = new Set(existingContacts.map((c) => c.id));
+    
+    await this.ensureAllContactsExist(contactIds, existingIds);
+    await this.validateAllContactsBelongToSameUser(existingContacts);
 
     return Promise.all(
       data.contacts.map((contact) =>
@@ -89,7 +89,24 @@ export class EmergencyContactService {
     );
   }
 
+  private async validateAllContactsBelongToSameUser(existingContacts: EmergencyContact[]) {
+    const userIds = new Set(existingContacts.map((c) => c.userId));
+    if (userIds.size > 1) {
+      throw new AppError('All contacts must belong to the same user', 403);
+    }
+  }
+
+  private async ensureAllContactsExist(contactIds : string[],existingIds: Set<string>) {
+    for (const id of contactIds) {
+      if (!existingIds.has(id)) {
+        throw new AppError(`Emergency contact with id ${id} not found`, 404);
+      }
+    }
+  }
+
+
   async deleteEmergencyContact(id: string) {
     return this.emergencyContactRepository.delete(id);
   }
+
 }
