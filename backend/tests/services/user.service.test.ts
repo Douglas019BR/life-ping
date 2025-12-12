@@ -78,15 +78,14 @@ describe('UserService', () => {
         updatedAt: new Date(),
       };
 
-      const resultWithContacts = { ...user, emergencyContacts: [] };
-      prismaMock.user.findUnique.mockResolvedValue(resultWithContacts);
+      prismaMock.user.findUnique.mockResolvedValue(user);
 
       const result = await userService.getUserById('1');
 
-      expect(result).toEqual(resultWithContacts);
+      expect(result).toEqual(user);
       expect(prismaMock.user.findUnique).toHaveBeenCalledWith({
+        "include": {"emergencyContacts": true,},
         where: { id: '1' },
-        include: { emergencyContacts: true },
       });
     });
 
@@ -114,6 +113,7 @@ describe('UserService', () => {
         updatedAt: new Date(),
       };
 
+      prismaMock.user.findUnique.mockResolvedValue(null);
       prismaMock.user.update.mockResolvedValue(updatedUser);
 
       const result = await userService.updateUser('1', updateData);
@@ -123,6 +123,28 @@ describe('UserService', () => {
         where: { id: '1' },
         data: updateData,
       });
+    });
+
+    it('should throw an error if whatsapp is already in use by another user', async () => {
+      const updateData = { whatsapp: '111' };
+      const existingUser: User = {
+        id: '2',
+        name: 'Existing User',
+        whatsapp: '111',
+        checkTime: '10:00',
+        isActive: true,
+        paymentStatus: 'pending',
+        customMessage: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      prismaMock.user.findUnique.mockResolvedValue(existingUser); 
+
+
+      await expect(userService.updateUser('1', updateData)).rejects.toThrow(
+        new AppError('WhatsApp already registered', 409)
+      );
     });
   });
 
@@ -144,6 +166,14 @@ describe('UserService', () => {
       await userService.deleteUser('1');
 
       expect(prismaMock.user.delete).toHaveBeenCalledWith({ where: { id: '1' } });
+    });
+
+    it('should throw an error if user to delete is not found', async () => {
+      prismaMock.user.delete.mockRejectedValue(new Error('Record to delete does not exist.'));
+
+      await expect(userService.deleteUser('1')).rejects.toThrow(
+        'Record to delete does not exist.'
+      );
     });
   });
 });

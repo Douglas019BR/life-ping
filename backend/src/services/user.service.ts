@@ -30,13 +30,13 @@ export class UserService {
   }
 
   async updateUser(id: string, data: UpdateUserDTO) {
-  if (data.whatsapp) {
-    const existingUser = await this.userRepository.findByWhatsapp(data.whatsapp);
-    if (existingUser && existingUser.id !== id) {
-      throw new AppError('WhatsApp already registered', 409);
+    if (data.whatsapp) {
+      const existingUser = await this.userRepository.findByWhatsapp(data.whatsapp);
+      if (existingUser && existingUser.id !== id) {
+        throw new AppError('WhatsApp already registered', 409);
+      }
     }
-  }
-  return this.userRepository.update(id, data);
+    return this.userRepository.update(id, data);
   }
 
   async deleteUser(id: string) {
