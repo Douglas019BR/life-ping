@@ -236,7 +236,12 @@ describe('EmergencyContactService', () => {
           { id: '2', name: 'Contact 2', whatsapp: '222', order: 2 },
         ],
       };
-      const updatedContacts = contactsToUpdate.contacts.map(c => ({ ...c, userId, createdAt: new Date(), updatedAt: new Date() }));
+      const updatedContacts = contactsToUpdate.contacts.map((c) => ({
+        ...c,
+        userId,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }));
 
       prismaMock.emergencyContact.findMany.mockResolvedValue(updatedContacts);
       prismaMock.$transaction.mockResolvedValue(updatedContacts);
@@ -255,23 +260,21 @@ describe('EmergencyContactService', () => {
         ],
       };
 
-      await expect(service.updateMultipleEmergencyContacts(contactsToUpdate, userId)).rejects.toThrow(
-        new AppError('Duplicate orders are not allowed', 409)
-      );
+      await expect(
+        service.updateMultipleEmergencyContacts(contactsToUpdate, userId)
+      ).rejects.toThrow(new AppError('Duplicate orders are not allowed', 409));
     });
 
     it('should throw 404 when contact to update is not found', async () => {
       const contactsToUpdate = {
-        contacts: [
-          { id: 'non-existent', name: 'Contact 1', whatsapp: '111', order: 1 },
-        ],
+        contacts: [{ id: 'non-existent', name: 'Contact 1', whatsapp: '111', order: 1 }],
       };
 
       prismaMock.emergencyContact.findMany.mockResolvedValue([]);
 
-      await expect(service.updateMultipleEmergencyContacts(contactsToUpdate, userId)).rejects.toThrow(
-        new AppError('Emergency contact with id non-existent not found', 404)
-      );
+      await expect(
+        service.updateMultipleEmergencyContacts(contactsToUpdate, userId)
+      ).rejects.toThrow(new AppError('Emergency contact with id non-existent not found', 404));
     });
 
     it('should throw 403 when contacts belong to a different user', async () => {
@@ -303,9 +306,9 @@ describe('EmergencyContactService', () => {
         },
       ] as EmergencyContact[]);
 
-      await expect(service.updateMultipleEmergencyContacts(contactsToUpdate, userId)).rejects.toThrow(
-        new AppError('All contacts must belong to the specified user', 403)
-      );
+      await expect(
+        service.updateMultipleEmergencyContacts(contactsToUpdate, userId)
+      ).rejects.toThrow(new AppError('All contacts must belong to the specified user', 403));
     });
 
     it('should throw an error if the transaction fails', async () => {
@@ -315,13 +318,20 @@ describe('EmergencyContactService', () => {
           { id: '2', name: 'Contact 2', whatsapp: '222', order: 2 },
         ],
       };
-      const updatedContacts = contactsToUpdate.contacts.map(c => ({ ...c, userId, createdAt: new Date(), updatedAt: new Date() }));
+      const updatedContacts = contactsToUpdate.contacts.map((c) => ({
+        ...c,
+        userId,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }));
       const error = new Error('Transaction failed');
 
       prismaMock.emergencyContact.findMany.mockResolvedValue(updatedContacts);
       prismaMock.$transaction.mockRejectedValue(error);
 
-      await expect(service.updateMultipleEmergencyContacts(contactsToUpdate, userId)).rejects.toThrow(error);
+      await expect(
+        service.updateMultipleEmergencyContacts(contactsToUpdate, userId)
+      ).rejects.toThrow(error);
     });
   });
 
@@ -345,7 +355,9 @@ describe('EmergencyContactService', () => {
     });
 
     it('should throw an error if contact to delete is not found', async () => {
-      prismaMock.emergencyContact.delete.mockRejectedValue(new Error('Record to delete does not exist.'));
+      prismaMock.emergencyContact.delete.mockRejectedValue(
+        new Error('Record to delete does not exist.')
+      );
 
       await expect(service.deleteEmergencyContact('1')).rejects.toThrow(
         'Record to delete does not exist.'

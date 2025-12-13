@@ -4,6 +4,7 @@ import { env } from './config/env';
 import prisma from './config/database';
 import emergencyContactRoutes from './routes/emergencyContact.routes';
 import userRoutes from './routes/user.routes';
+import { authRoutes } from './routes/auth.routes';
 import errorHandler from './middlewares/errorHandler';
 
 const app = express();
@@ -19,6 +20,7 @@ app.get('/health/db', async (req, res) => {
   res.json({ status: 'ok', database: 'connected' });
 });
 
+app.use('/auth', authRoutes);
 app.use('/users', userRoutes);
 app.use('/emergency-contacts', emergencyContactRoutes);
 

@@ -3,7 +3,13 @@ import { CreateUserDTO, UpdateUserDTO } from '../models/user.types';
 
 export class UserRepository {
   async create(data: CreateUserDTO) {
-    return prisma.user.create({ data });
+    return prisma.user.create({ 
+      data: {
+        ...data,
+        email: `${data.whatsapp}@temp.com`, // Temporary email for legacy users
+        password: 'temp_password' // Temporary password for legacy users
+      }
+    });
   }
 
   async findAll() {
