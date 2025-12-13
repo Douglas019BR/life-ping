@@ -1,0 +1,75 @@
+sequenceDiagram
+    participant U as User/Frontend
+    participant A as Backend API
+    participant G as Google OAuth
+    participant DB as Database
+
+    Note over U,DB: Fluxo Login Tradicional
+
+    %% Login tradicional
+    U->>A: POST /auth/login<br/>{email, password}
+    A->>DB: SELECT user WHERE email
+    A->>A: Verificar bcrypt password
+    A->>A: Gerar access_token (15min)
+    A->>A: Gerar refresh_token (1 dia)
+    A->>DB: INSERT refresh_token<br/>{user_id, token_hash, expires_at}
+    A->>U: {accessToken, refreshToken, user}
+
+    Note over U,DB: Fluxo OpenID Connect - Google OAuth
+
+    %% Iniciar OAuth
+    U->>A: POST /auth/google<br/>{redirectUri}
+    A->>A: Gerar state (CSRF)
+    A->>U: {authUrl, state}
+    U->>G: Redirect para authUrl
+
+    %% Autorização Google
+    G->>G: User login/consent
+    G->>U: Redirect callback<br/>?code=xxx&state=yyy
+
+    %% Callback
+    U->>A: GET /auth/google/callback<br/>?code=xxx&state=yyy
+    A->>A: Validar state
+    
+    %% Trocar code por tokens
+    A->>G: POST /oauth2/v4/token<br/>{code, client_id, client_secret}
+    G->>A: {access_token, id_token}
+
+    %% Validar ID Token
+    A->>G: GET /.well-known/jwks
+    G->>A: {public_keys}
+    A->>A: Validar assinatura ID Token
+    A->>A: Validar claims (iss, aud, exp)
+    A->>A: Extrair dados user<br/>{sub, email, name, picture}
+
+    %% Criar/Atualizar usuário
+    A->>DB: SELECT user WHERE google_id=sub
+    alt Usuário não existe
+        A->>DB: INSERT user<br/>{google_id, email, name, avatar_url}
+    else Usuário existe
+        A->>DB: UPDATE user<br/>{name, avatar_url}
+    end
+
+    %% Gerar tokens aplicação
+    A->>A: Gerar access_token (15min)
+    A->>A: Gerar refresh_token (1 dia)
+    A->>DB: INSERT refresh_token<br/>{user_id, token_hash, expires_at}
+
+    A->>U: {accessToken, refreshToken, user}
+
+    Note over U,DB: Fluxo de Refresh Token
+
+    %% Refresh token - apenas renova access token
+    U->>A: POST /auth/refresh<br/>{refreshToken}
+    A->>DB: SELECT refresh_token WHERE token_hash
+    A->>A: Validar token não expirado/revogado
+    A->>A: Gerar novo access_token (15min)
+    A->>U: {accessToken}
+
+    Note over U,DB: Fluxo de Logout
+
+    %% Logout
+    U->>A: POST /auth/logout<br/>{refreshToken}
+    A->>DB: UPDATE refresh_token<br/>SET revoked_at = NOW()
+    A->>U: Success
+
