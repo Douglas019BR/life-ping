@@ -42,12 +42,12 @@ describe('UserService', () => {
       expect(prismaMock.user.findUnique).toHaveBeenCalledWith({
         where: { whatsapp: userData.whatsapp },
       });
-      expect(prismaMock.user.create).toHaveBeenCalledWith({ 
+      expect(prismaMock.user.create).toHaveBeenCalledWith({
         data: {
           ...userData,
           email: `${userData.whatsapp}@temp.com`,
-          password: 'temp_password'
-        }
+          password: 'temp_password',
+        },
       });
     });
 

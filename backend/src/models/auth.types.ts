@@ -24,9 +24,20 @@ export const RefreshTokenSchema = z.object({
   refreshToken: z.string().min(1, 'Refresh token é obrigatório'),
 });
 
+export const GoogleAuthSchema = z.object({
+  redirectUri: z.string().url('URI de redirecionamento inválida'),
+});
+
+export const GoogleCallbackSchema = z.object({
+  code: z.string().min(1, 'Código de autorização é obrigatório'),
+  state: z.string().min(1, 'State é obrigatório'),
+});
+
 export type LoginRequest = z.infer<typeof LoginSchema>;
 export type RegisterRequest = z.infer<typeof RegisterSchema>;
 export type RefreshTokenRequest = z.infer<typeof RefreshTokenSchema>;
+export type GoogleAuthRequest = z.infer<typeof GoogleAuthSchema>;
+export type GoogleCallbackRequest = z.infer<typeof GoogleCallbackSchema>;
 
 export interface AuthResponse {
   accessToken: string;
@@ -35,11 +46,17 @@ export interface AuthResponse {
     id: string;
     email: string;
     name: string;
+    avatarUrl?: string;
   };
 }
 
 export interface RefreshResponse {
   accessToken: string;
+}
+
+export interface GoogleAuthResponse {
+  authUrl: string;
+  state: string;
 }
 
 export interface JWTPayload {
@@ -52,6 +69,29 @@ export interface JWTPayload {
 export interface RefreshJWTPayload {
   userId: string;
   tokenId: string;
+  iat: number;
+  exp: number;
+}
+
+export interface GoogleTokenResponse {
+  access_token: string;
+  id_token: string;
+  expires_in: number;
+  token_type: string;
+  scope: string;
+  refresh_token?: string;
+}
+
+export interface GoogleIdTokenPayload {
+  iss: string;
+  aud: string;
+  sub: string;
+  email: string;
+  email_verified: boolean;
+  name: string;
+  picture?: string;
+  given_name?: string;
+  family_name?: string;
   iat: number;
   exp: number;
 }

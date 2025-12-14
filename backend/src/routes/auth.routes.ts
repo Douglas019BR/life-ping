@@ -9,5 +9,7 @@ router.post('/login', authController.login);
 router.post('/register', authController.register);
 router.post('/refresh', authController.refresh);
 router.post('/logout', authController.logout);
+router.post('/google', authController.googleAuth);
+router.get('/google/callback', authController.googleCallback);
 
 export { router as authRoutes };

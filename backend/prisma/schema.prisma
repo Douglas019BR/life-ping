@@ -11,8 +11,8 @@ model User {
   id             String    @id @default(uuid())
   name           String
   email          String    @unique
-  password       String
-  whatsapp       String    @unique
+  password       String?
+  whatsapp       String?   @unique
   customMessage  String?   @map("custom_message")
   checkTime      String    @default("14:00") @map("check_time")
   isActive       Boolean   @default(true) @map("is_active")

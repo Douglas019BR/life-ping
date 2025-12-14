@@ -1,6 +1,12 @@
 import { Request, Response } from 'express';
 import { AuthService } from '../services/auth.service';
-import { LoginSchema, RegisterSchema, RefreshTokenSchema } from '../models/auth.types';
+import {
+  LoginSchema,
+  RegisterSchema,
+  RefreshTokenSchema,
+  GoogleAuthSchema,
+  GoogleCallbackSchema,
+} from '../models/auth.types';
 import prisma from '../config/database';
 
 const authService = new AuthService(prisma);
@@ -28,5 +34,17 @@ export class AuthController {
     const data = RefreshTokenSchema.parse(req.body);
     await authService.logout(data.refreshToken);
     res.status(204).send();
+  }
+
+  async googleAuth(req: Request, res: Response) {
+    const data = GoogleAuthSchema.parse(req.body);
+    const result = await authService.googleAuth(data);
+    res.json(result);
+  }
+
+  async googleCallback(req: Request, res: Response) {
+    const data = GoogleCallbackSchema.parse(req.query);
+    const result = await authService.googleCallback(data);
+    res.json(result);
   }
 }
