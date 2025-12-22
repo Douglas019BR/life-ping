@@ -8,6 +8,7 @@ const userController = new UserController();
 router.use(authMiddleware);
 
 router.post('/', userController.create);
+router.post('/complete-onboarding', userController.completeOnboarding);
 router.get('/', userController.getAll);
 router.get('/:id', userController.getById);
 router.put('/:id', userController.update);

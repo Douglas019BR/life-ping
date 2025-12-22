@@ -101,3 +101,14 @@ model AlertNotification {
   @@index([status])
   @@map("alert_notifications")
 }
+
+model OAuthState {
+  id        String   @id @default(uuid())
+  state     String   @unique
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([state])
+  @@index([expiresAt])
+  @@map("oauth_states")
+}

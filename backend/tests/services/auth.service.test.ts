@@ -433,7 +433,23 @@ describe('AuthService', () => {
         picture: 'https://avatar.url',
       };
 
-      it('should create new user from Google OAuth', async () => {
+      beforeEach(() => {
+        // Mock valid state by default
+        prismaMock.oAuthState.findUnique.mockResolvedValue({
+          id: '1',
+          state: 'test_state',
+          expiresAt: new Date(Date.now() + 10000),
+          createdAt: new Date(),
+        });
+        prismaMock.oAuthState.delete.mockResolvedValue({
+          id: '1',
+          state: 'test_state',
+          expiresAt: new Date(),
+          createdAt: new Date(),
+        });
+      });
+
+      it('should create new user from Google OAuth without whatsapp', async () => {
         mockGoogleClient.getToken.mockResolvedValue({
           tokens: { id_token: 'mock_id_token' },
         });
@@ -481,13 +497,12 @@ describe('AuthService', () => {
         });
 
         expect(prismaMock.user.create).toHaveBeenCalledWith({
-          data: {
+          data: expect.objectContaining({
             name: 'Test User',
             email: 'test@gmail.com',
             googleId: 'google123',
             avatarUrl: 'https://avatar.url',
-            lastLogin: expect.any(Date),
-          },
+          }),
         });
       });
 

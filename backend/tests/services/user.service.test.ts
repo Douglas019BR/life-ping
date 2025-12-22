@@ -8,20 +8,25 @@ describe('UserService', () => {
 
   beforeEach(() => {
     userService = new UserService();
+    jest.clearAllMocks();
   });
 
   describe('createUser', () => {
-    it('should create a new user successfully', async () => {
+    it('should create user with email/password (traditional registration)', async () => {
       const userData = {
         name: 'Test User',
+        email: 'test@example.com',
+        password: 'password123',
         whatsapp: '1234567890',
         checkTime: '10:00',
       };
       const expectedUser: User = {
         id: '1',
-        ...userData,
+        name: 'Test User',
         email: 'test@example.com',
         password: 'hashedpassword',
+        whatsapp: '1234567890',
+        checkTime: '10:00',
         isActive: true,
         paymentStatus: 'pending',
         customMessage: null,
@@ -42,26 +47,71 @@ describe('UserService', () => {
       expect(prismaMock.user.findUnique).toHaveBeenCalledWith({
         where: { whatsapp: userData.whatsapp },
       });
+    });
+
+    it('should create user via Google OAuth (without password)', async () => {
+      const userData = {
+        name: 'Google User',
+        email: 'google@example.com',
+        googleId: 'google123',
+        checkTime: '14:00',
+      };
+      const expectedUser: User = {
+        id: '1',
+        name: 'Google User',
+        email: 'google@example.com',
+        password: null,
+        whatsapp: null,
+        checkTime: '14:00',
+        isActive: true,
+        paymentStatus: 'pending',
+        customMessage: null,
+        refreshToken: null,
+        lastLogin: null,
+        googleId: 'google123',
+        avatarUrl: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      prismaMock.user.create.mockResolvedValue(expectedUser);
+
+      const result = await userService.createUser(userData);
+
+      expect(result).toEqual(expectedUser);
       expect(prismaMock.user.create).toHaveBeenCalledWith({
-        data: {
-          ...userData,
-          email: `${userData.whatsapp}@temp.com`,
-          password: 'temp_password',
-        },
+        data: userData,
       });
     });
 
-    it('should throw an AppError if whatsapp is already registered', async () => {
+    it('should throw error if password missing for non-Google registration', async () => {
       const userData = {
         name: 'Test User',
+        email: 'test@example.com',
         whatsapp: '1234567890',
-        checkTime: '10:00',
+        checkTime: '14:00',
+      };
+
+      await expect(userService.createUser(userData)).rejects.toThrow(
+        new AppError('Password is required for email registration', 400)
+      );
+    });
+
+    it('should throw error if whatsapp already registered', async () => {
+      const userData = {
+        name: 'Test User',
+        email: 'test@example.com',
+        password: 'password123',
+        whatsapp: '1234567890',
+        checkTime: '14:00',
       };
       const existingUser: User = {
-        id: '1',
-        ...userData,
+        id: '2',
+        name: 'Existing User',
         email: 'existing@example.com',
         password: 'hashedpassword',
+        whatsapp: '1234567890',
+        checkTime: '10:00',
         isActive: true,
         paymentStatus: 'pending',
         customMessage: null,

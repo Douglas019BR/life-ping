@@ -1,14 +1,18 @@
 import prisma from '../config/database';
 import { CreateUserDTO, UpdateUserDTO } from '../models/user.types';
+import bcrypt from 'bcrypt';
 
 export class UserRepository {
   async create(data: CreateUserDTO) {
+    const userData: any = { ...data };
+    
+    // Hash password if provided
+    if (userData.password) {
+      userData.password = await bcrypt.hash(userData.password, 10);
+    }
+    
     return prisma.user.create({
-      data: {
-        ...data,
-        email: `${data.whatsapp}@temp.com`, // Temporary email for legacy users
-        password: 'temp_password', // Temporary password for legacy users
-      },
+      data: userData,
     });
   }
 

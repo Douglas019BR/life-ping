@@ -10,10 +10,18 @@ export class UserService {
   }
 
   async createUser(data: CreateUserDTO) {
-    const existingUser = await this.userRepository.findByWhatsapp(data.whatsapp);
-    if (existingUser) {
-      throw new AppError('WhatsApp already registered', 409);
+    // Validate onboarding journey
+    if (!data.googleId && !data.password) {
+      throw new AppError('Password is required for email registration', 400);
     }
+    
+    if (data.whatsapp) {
+      const existingUser = await this.userRepository.findByWhatsapp(data.whatsapp);
+      if (existingUser) {
+        throw new AppError('WhatsApp already registered', 409);
+      }
+    }
+    
     return this.userRepository.create(data);
   }
 

@@ -16,17 +16,15 @@ import {
 } from '../models/auth.types';
 
 export class AuthService {
-  private googleClient: OAuth2Client;
+  private googleClient?: OAuth2Client;
 
   constructor(private prisma: PrismaClient) {
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
 
-    if (!clientId || !clientSecret) {
-      throw new Error('GOOGLE_CLIENT_ID e GOOGLE_CLIENT_SECRET devem estar configurados');
+    if (clientId && clientSecret) {
+      this.googleClient = new OAuth2Client(clientId, clientSecret);
     }
-
-    this.googleClient = new OAuth2Client(clientId, clientSecret);
   }
 
   async login(data: LoginRequest): Promise<AuthResponse> {
@@ -162,7 +160,18 @@ export class AuthService {
   }
 
   async googleAuth(data: GoogleAuthRequest): Promise<GoogleAuthResponse> {
+    if (!this.googleClient) {
+      throw new AppError('Google OAuth not configured', 500);
+    }
+
     const state = Math.random().toString(36).substring(2, 15);
+
+    await this.prisma.oAuthState.create({
+      data: {
+        state,
+        expiresAt: new Date(Date.now() + 15 * 60 * 1000), // 10 minutes
+      },
+    });
 
     const authUrl = this.googleClient.generateAuthUrl({
       access_type: 'offline',
@@ -175,6 +184,33 @@ export class AuthService {
   }
 
   async googleCallback(data: GoogleCallbackRequest): Promise<AuthResponse> {
+    if (!this.googleClient) {
+      throw new AppError('Google OAuth not configured', 500);
+    }
+
+    if (!data.state) {
+      throw new AppError('State parameter missing', 400);
+    }
+
+    const storedState = await this.prisma.oAuthState.findUnique({
+      where: { state: data.state },
+    });
+
+    if (!storedState) {
+      throw new AppError('Invalid or expired state parameter', 400);
+    }
+
+    if (storedState.expiresAt < new Date()) {
+      await this.prisma.oAuthState.delete({
+        where: { state: data.state },
+      });
+      throw new AppError('State parameter expired', 400);
+    }
+
+    await this.prisma.oAuthState.delete({
+      where: { state: data.state },
+    });
+
     try {
       const { tokens } = await this.googleClient.getToken({
         code: data.code,
