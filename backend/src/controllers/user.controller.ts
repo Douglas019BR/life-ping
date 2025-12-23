@@ -40,15 +40,15 @@ export class UserController {
   completeOnboarding = async (req: Request, res: Response) => {
     const { whatsapp } = req.body;
     const userId = req.user?.userId;
-    
+
     if (!userId) {
       throw new AppError('User not authenticated', 401);
     }
-    
+
     if (!whatsapp) {
       throw new AppError('WhatsApp is required', 400);
     }
-    
+
     const user = await this.userService.updateUser(userId, { whatsapp });
     res.json(user);
   };

@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { UserController } from '../../src/controllers/user.controller';
 import { UserService } from '../../src/services/user.service';
 import { AppError } from '../../src/errors/AppError';
+import { User } from '@prisma/client';
 
 jest.mock('../../src/services/user.service');
 const MockedUserService = UserService as jest.MockedClass<typeof UserService>;
@@ -15,7 +16,10 @@ describe('UserController', () => {
   beforeEach(() => {
     mockUserService = new MockedUserService() as jest.Mocked<UserService>;
     userController = new UserController();
-    (userController as any).userService = mockUserService;
+    Object.defineProperty(userController, 'userService', {
+      value: mockUserService,
+      writable: true,
+    });
 
     mockRequest = {
       body: {},
@@ -33,7 +37,7 @@ describe('UserController', () => {
     it('should complete onboarding successfully', async () => {
       const whatsapp = '5511999999999';
       const userId = 'user123';
-      const updatedUser = {
+      const updatedUser: Partial<User> = {
         id: userId,
         name: 'Google User',
         email: 'google@example.com',
@@ -42,12 +46,9 @@ describe('UserController', () => {
 
       mockRequest.body = { whatsapp };
       mockRequest.user = { userId, email: 'google@example.com' };
-      mockUserService.updateUser.mockResolvedValue(updatedUser as any);
+      mockUserService.updateUser.mockResolvedValue(updatedUser as User);
 
-      await userController.completeOnboarding(
-        mockRequest as Request,
-        mockResponse as Response
-      );
+      await userController.completeOnboarding(mockRequest as Request, mockResponse as Response);
 
       expect(mockUserService.updateUser).toHaveBeenCalledWith(userId, { whatsapp });
       expect(mockResponse.json).toHaveBeenCalledWith(updatedUser);
@@ -58,10 +59,7 @@ describe('UserController', () => {
       mockRequest.user = undefined;
 
       await expect(
-        userController.completeOnboarding(
-          mockRequest as Request,
-          mockResponse as Response
-        )
+        userController.completeOnboarding(mockRequest as Request, mockResponse as Response)
       ).rejects.toThrow(new AppError('User not authenticated', 401));
     });
 
@@ -70,10 +68,7 @@ describe('UserController', () => {
       mockRequest.user = { userId: 'user123', email: 'test@example.com' };
 
       await expect(
-        userController.completeOnboarding(
-          mockRequest as Request,
-          mockResponse as Response
-        )
+        userController.completeOnboarding(mockRequest as Request, mockResponse as Response)
       ).rejects.toThrow(new AppError('WhatsApp is required', 400));
     });
   });
@@ -87,10 +82,10 @@ describe('UserController', () => {
         whatsapp: '5511999999999',
         checkTime: '14:00',
       };
-      const createdUser = { id: '1', ...userData };
+      const createdUser: Partial<User> = { id: '1', ...userData };
 
       mockRequest.body = userData;
-      mockUserService.createUser.mockResolvedValue(createdUser as any);
+      mockUserService.createUser.mockResolvedValue(createdUser as User);
 
       await userController.create(mockRequest as Request, mockResponse as Response);
 

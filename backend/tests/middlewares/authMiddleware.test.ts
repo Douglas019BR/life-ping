@@ -24,7 +24,7 @@ describe('authMiddleware', () => {
   it('should authenticate valid token', () => {
     const payload = { userId: '123', email: 'test@example.com' };
     const token = jwt.sign(payload, 'test-secret');
-    
+
     mockRequest.headers = {
       authorization: `Bearer ${token}`,
     };
@@ -46,7 +46,7 @@ describe('authMiddleware', () => {
 
   it('should throw error when JWT_SECRET is not configured', () => {
     delete process.env.JWT_SECRET;
-    
+
     mockRequest.headers = {
       authorization: 'Bearer valid-token',
     };
@@ -69,7 +69,7 @@ describe('authMiddleware', () => {
   it('should throw error for expired token', () => {
     const payload = { userId: '123', email: 'test@example.com' };
     const expiredToken = jwt.sign(payload, 'test-secret', { expiresIn: '-1h' });
-    
+
     mockRequest.headers = {
       authorization: `Bearer ${expiredToken}`,
     };

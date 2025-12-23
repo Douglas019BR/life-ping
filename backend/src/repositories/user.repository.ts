@@ -4,13 +4,12 @@ import bcrypt from 'bcrypt';
 
 export class UserRepository {
   async create(data: CreateUserDTO) {
-    const userData: any = { ...data };
-    
-    // Hash password if provided
+    const userData: CreateUserDTO = { ...data };
+
     if (userData.password) {
       userData.password = await bcrypt.hash(userData.password, 10);
     }
-    
+
     return prisma.user.create({
       data: userData,
     });

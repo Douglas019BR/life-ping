@@ -1,6 +1,7 @@
 import { AuthService } from '../../src/services/auth.service';
 import { AppError } from '../../src/errors/AppError';
 import { prismaMock } from '../setup';
+import { OAuth2Client } from 'google-auth-library';
 
 describe('AuthService OAuth CSRF Protection', () => {
   let authService: AuthService;
@@ -81,8 +82,11 @@ describe('AuthService OAuth CSRF Protection', () => {
       // Mock Google OAuth flow to fail after state validation
       const mockGoogleClient = {
         getToken: jest.fn().mockRejectedValue(new AppError('Test error', 400)),
-      };
-      (authService as any).googleClient = mockGoogleClient;
+      } as unknown as OAuth2Client;
+      Object.defineProperty(authService, 'googleClient', {
+        value: mockGoogleClient,
+        writable: true,
+      });
 
       await expect(authService.googleCallback(callbackData)).rejects.toThrow();
 
@@ -100,8 +104,11 @@ describe('AuthService OAuth CSRF Protection', () => {
 
       const mockGoogleClient = {
         generateAuthUrl: jest.fn().mockReturnValue('https://accounts.google.com/oauth/authorize'),
-      };
-      (authService as any).googleClient = mockGoogleClient;
+      } as unknown as OAuth2Client;
+      Object.defineProperty(authService, 'googleClient', {
+        value: mockGoogleClient,
+        writable: true,
+      });
 
       prismaMock.oAuthState.create.mockResolvedValue({
         id: '1',

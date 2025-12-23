@@ -4,7 +4,10 @@ export const CreateUserSchema = z.object({
   name: z.string().min(3).max(255),
   email: z.string().email(),
   password: z.string().min(6).optional(),
-  whatsapp: z.string().regex(/^\d{10,15}$/).optional(),
+  whatsapp: z
+    .string()
+    .regex(/^\d{10,15}$/)
+    .optional(),
   customMessage: z.string().max(500).optional(),
   checkTime: z
     .string()
