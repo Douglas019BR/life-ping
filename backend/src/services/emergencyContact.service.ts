@@ -66,23 +66,18 @@ export class EmergencyContactService {
     return this.emergencyContactRepository.update(id, data);
   }
 
-  async updateMultipleEmergencyContacts(
-    data: UpdateMultipleEmergencyContactsDTO,
-    userId: string,
-  ) {
+  async updateMultipleEmergencyContacts(data: UpdateMultipleEmergencyContactsDTO, userId: string) {
     const orders = data.contacts.map((c) => c.order);
     if (new Set(orders).size !== orders.length) {
       throw new AppError('Duplicate orders are not allowed', 409);
     }
 
     const contactIds = data.contacts.map((contact) => contact.id);
-    const existingContacts =
-      await this.emergencyContactRepository.findManyByIds(contactIds);
+    const existingContacts = await this.emergencyContactRepository.findManyByIds(contactIds);
     const existingIds = new Set(existingContacts.map((c) => c.id));
 
     await this.ensureAllContactsExists(contactIds, existingIds);
     await this.ensureAllContactsBelongToUser(existingContacts, userId);
-    
 
     return prisma.$transaction(
       data.contacts.map((contact) =>
@@ -93,8 +88,8 @@ export class EmergencyContactService {
             whatsapp: contact.whatsapp,
             order: contact.order,
           },
-        }),
-      ),
+        })
+      )
     );
   }
 
@@ -106,16 +101,14 @@ export class EmergencyContactService {
     }
   }
 
-  private async ensureAllContactsBelongToUser(contacts : EmergencyContact[], userId: string) {
+  private async ensureAllContactsBelongToUser(contacts: EmergencyContact[], userId: string) {
     const invalidContacts = contacts.filter((c) => c.userId !== userId);
     if (invalidContacts.length > 0) {
       throw new AppError('All contacts must belong to the specified user', 403);
     }
   }
 
-
   async deleteEmergencyContact(id: string) {
     return this.emergencyContactRepository.delete(id);
   }
-
 }

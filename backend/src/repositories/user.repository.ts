@@ -1,9 +1,18 @@
 import prisma from '../config/database';
 import { CreateUserDTO, UpdateUserDTO } from '../models/user.types';
+import * as bcrypt from 'bcrypt';
 
 export class UserRepository {
   async create(data: CreateUserDTO) {
-    return prisma.user.create({ data });
+    const userData: CreateUserDTO = { ...data };
+
+    if (userData.password) {
+      userData.password = await bcrypt.hash(userData.password, 12);
+    }
+
+    return prisma.user.create({
+      data: userData,
+    });
   }
 
   async findAll() {

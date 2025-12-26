@@ -1,8 +1,11 @@
 import { Router } from 'express';
 import { EmergencyContactController } from '../controllers/emergencyContact.controller';
+import { authMiddleware } from '../middlewares/authMiddleware';
 
 const router = Router();
 const emergencyContactController = new EmergencyContactController();
+
+router.use(authMiddleware);
 
 router.post('/', emergencyContactController.create);
 router.get('/', emergencyContactController.getAll);

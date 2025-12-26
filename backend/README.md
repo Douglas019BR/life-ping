@@ -45,6 +45,16 @@ npm run dev
 - `GET /health` - Status do servidor
 - `GET /health/db` - Status da conexão com banco
 
+### Authentication
+Ver [Authentication API Documentation](./docs/auth-api.md) para detalhes completos.
+
+- `POST /auth/login` - Login com email/senha
+- `POST /auth/register` - Registro de usuário
+- `POST /auth/refresh` - Renovar access token
+- `POST /auth/logout` - Logout
+- `POST /auth/google` - Iniciar OAuth Google
+- `GET /auth/google/callback` - Callback OAuth Google
+
 ## Estrutura
 
 ```

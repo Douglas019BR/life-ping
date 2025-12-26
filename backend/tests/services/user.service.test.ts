@@ -8,21 +8,32 @@ describe('UserService', () => {
 
   beforeEach(() => {
     userService = new UserService();
+    jest.clearAllMocks();
   });
 
   describe('createUser', () => {
-    it('should create a new user successfully', async () => {
+    it('should create user with email/password (traditional registration)', async () => {
       const userData = {
         name: 'Test User',
+        email: 'test@example.com',
+        password: 'password123',
         whatsapp: '1234567890',
         checkTime: '10:00',
       };
       const expectedUser: User = {
         id: '1',
-        ...userData,
+        name: 'Test User',
+        email: 'test@example.com',
+        password: 'hashedpassword',
+        whatsapp: '1234567890',
+        checkTime: '10:00',
         isActive: true,
         paymentStatus: 'pending',
         customMessage: null,
+        refreshToken: null,
+        lastLogin: null,
+        googleId: null,
+        avatarUrl: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -36,21 +47,78 @@ describe('UserService', () => {
       expect(prismaMock.user.findUnique).toHaveBeenCalledWith({
         where: { whatsapp: userData.whatsapp },
       });
-      expect(prismaMock.user.create).toHaveBeenCalledWith({ data: userData });
     });
 
-    it('should throw an AppError if whatsapp is already registered', async () => {
+    it('should create user via Google OAuth (without password)', async () => {
       const userData = {
-        name: 'Test User',
-        whatsapp: '1234567890',
-        checkTime: '10:00',
+        name: 'Google User',
+        email: 'google@example.com',
+        googleId: 'google123',
+        checkTime: '14:00',
       };
-      const existingUser: User = {
+      const expectedUser: User = {
         id: '1',
-        ...userData,
+        name: 'Google User',
+        email: 'google@example.com',
+        password: null,
+        whatsapp: null,
+        checkTime: '14:00',
         isActive: true,
         paymentStatus: 'pending',
         customMessage: null,
+        refreshToken: null,
+        lastLogin: null,
+        googleId: 'google123',
+        avatarUrl: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      prismaMock.user.create.mockResolvedValue(expectedUser);
+
+      const result = await userService.createUser(userData);
+
+      expect(result).toEqual(expectedUser);
+      expect(prismaMock.user.create).toHaveBeenCalledWith({
+        data: userData,
+      });
+    });
+
+    it('should throw error if password missing for non-Google registration', async () => {
+      const userData = {
+        name: 'Test User',
+        email: 'test@example.com',
+        whatsapp: '1234567890',
+        checkTime: '14:00',
+      };
+
+      await expect(userService.createUser(userData)).rejects.toThrow(
+        new AppError('Password is required for email registration', 400)
+      );
+    });
+
+    it('should throw error if whatsapp already registered', async () => {
+      const userData = {
+        name: 'Test User',
+        email: 'test@example.com',
+        password: 'password123',
+        whatsapp: '1234567890',
+        checkTime: '14:00',
+      };
+      const existingUser: User = {
+        id: '2',
+        name: 'Existing User',
+        email: 'existing@example.com',
+        password: 'hashedpassword',
+        whatsapp: '1234567890',
+        checkTime: '10:00',
+        isActive: true,
+        paymentStatus: 'pending',
+        customMessage: null,
+        refreshToken: null,
+        lastLogin: null,
+        googleId: null,
+        avatarUrl: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -71,9 +139,15 @@ describe('UserService', () => {
         name: 'Test User',
         whatsapp: '1234567890',
         checkTime: '10:00',
+        email: 'test@example.com',
+        password: 'hashedpassword',
         isActive: true,
         paymentStatus: 'pending',
         customMessage: null,
+        refreshToken: null,
+        lastLogin: null,
+        googleId: null,
+        avatarUrl: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -84,7 +158,7 @@ describe('UserService', () => {
 
       expect(result).toEqual(user);
       expect(prismaMock.user.findUnique).toHaveBeenCalledWith({
-        "include": {"emergencyContacts": true,},
+        include: { emergencyContacts: true },
         where: { id: '1' },
       });
     });
@@ -106,9 +180,15 @@ describe('UserService', () => {
         name: 'Updated Name',
         whatsapp: '1234567890',
         checkTime: '10:00',
+        email: 'test@example.com',
+        password: 'hashedpassword',
         isActive: true,
         paymentStatus: 'pending',
         customMessage: null,
+        refreshToken: null,
+        lastLogin: null,
+        googleId: null,
+        avatarUrl: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -132,15 +212,20 @@ describe('UserService', () => {
         name: 'Existing User',
         whatsapp: '111',
         checkTime: '10:00',
+        email: 'existing2@example.com',
+        password: 'hashedpassword',
         isActive: true,
         paymentStatus: 'pending',
         customMessage: null,
+        refreshToken: null,
+        lastLogin: null,
+        googleId: null,
+        avatarUrl: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
 
-      prismaMock.user.findUnique.mockResolvedValue(existingUser); 
-
+      prismaMock.user.findUnique.mockResolvedValue(existingUser);
 
       await expect(userService.updateUser('1', updateData)).rejects.toThrow(
         new AppError('WhatsApp already registered', 409)
@@ -155,9 +240,15 @@ describe('UserService', () => {
         name: 'Test User',
         whatsapp: '1234567890',
         checkTime: '10:00',
+        email: 'test@example.com',
+        password: 'hashedpassword',
         isActive: true,
         paymentStatus: 'pending',
         customMessage: null,
+        refreshToken: null,
+        lastLogin: null,
+        googleId: null,
+        avatarUrl: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -171,9 +262,7 @@ describe('UserService', () => {
     it('should throw an error if user to delete is not found', async () => {
       prismaMock.user.delete.mockRejectedValue(new Error('Record to delete does not exist.'));
 
-      await expect(userService.deleteUser('1')).rejects.toThrow(
-        'Record to delete does not exist.'
-      );
+      await expect(userService.deleteUser('1')).rejects.toThrow('Record to delete does not exist.');
     });
   });
 });

@@ -50,8 +50,10 @@ export class EmergencyContactController {
   updateMultiple = async (req: Request, res: Response) => {
     const { userId } = req.params;
     const data = UpdateMultipleEmergencyContactsSchema.parse(req.body);
-    const emergencyContacts =
-      await this.emergencyContactService.updateMultipleEmergencyContacts(data, userId);
+    const emergencyContacts = await this.emergencyContactService.updateMultipleEmergencyContacts(
+      data,
+      userId
+    );
     res.json(emergencyContacts);
   };
 

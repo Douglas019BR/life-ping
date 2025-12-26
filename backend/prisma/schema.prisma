@@ -8,21 +8,28 @@ datasource db {
 }
 
 model User {
-  id             String   @id @default(uuid())
+  id             String    @id @default(uuid())
   name           String
-  whatsapp       String   @unique
-  customMessage  String?  @map("custom_message")
-  checkTime      String   @default("14:00") @map("check_time")
-  isActive       Boolean  @default(true) @map("is_active")
-  paymentStatus  String   @default("pending") @map("payment_status")
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  email          String    @unique
+  password       String?
+  whatsapp       String?   @unique
+  customMessage  String?   @map("custom_message")
+  checkTime      String    @default("14:00") @map("check_time")
+  isActive       Boolean   @default(true) @map("is_active")
+  paymentStatus  String    @default("pending") @map("payment_status")
+  refreshToken   String?   @map("refresh_token")
+  lastLogin      DateTime? @map("last_login")
+  googleId       String?   @unique @map("google_id")
+  avatarUrl      String?   @map("avatar_url")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
 
   emergencyContacts EmergencyContact[]
   dailyChecks       DailyCheck[]
   alerts            Alert[]
 
   @@index([whatsapp])
+  @@index([email])
   @@index([isActive])
   @@index([checkTime])
   @@map("users")
@@ -93,4 +100,15 @@ model AlertNotification {
   @@index([alertId])
   @@index([status])
   @@map("alert_notifications")
+}
+
+model OAuthState {
+  id        String   @id @default(uuid())
+  state     String   @unique
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([state])
+  @@index([expiresAt])
+  @@map("oauth_states")
 }

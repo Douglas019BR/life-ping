@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { UserService } from '../services/user.service';
 import { CreateUserSchema, UpdateUserSchema } from '../models/user.types';
+import { AppError } from '../errors/AppError';
 
 export class UserController {
   private userService: UserService;
@@ -34,5 +35,21 @@ export class UserController {
   delete = async (req: Request, res: Response) => {
     await this.userService.deleteUser(req.params.id);
     res.status(204).send();
+  };
+
+  completeOnboarding = async (req: Request, res: Response) => {
+    const { whatsapp } = req.body;
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      throw new AppError('User not authenticated', 401);
+    }
+
+    if (!whatsapp) {
+      throw new AppError('WhatsApp is required', 400);
+    }
+
+    const user = await this.userService.updateUser(userId, { whatsapp });
+    res.json(user);
   };
 }
