@@ -106,6 +106,16 @@ describe('authMiddleware', () => {
 
     expect(() => {
       authMiddleware(mockRequest as Request, mockResponse as Response, mockNext);
-    }).toThrow(new AppError('Token inválido', 401));
+    }).toThrow(new AppError('Token não fornecido', 401));
+  });
+
+  it('should handle authorization header with Bearer and whitespace only', () => {
+    mockRequest.headers = {
+      authorization: 'Bearer   ',
+    };
+
+    expect(() => {
+      authMiddleware(mockRequest as Request, mockResponse as Response, mockNext);
+    }).toThrow(new AppError('Token não fornecido', 401));
   });
 });

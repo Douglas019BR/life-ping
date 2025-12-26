@@ -21,6 +21,10 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction) 
 
   const token = authHeader.replace('Bearer ', '');
 
+  if (!token.trim()) {
+    throw new AppError('Token não fornecido', 401);
+  }
+
   const secret = process.env.JWT_SECRET;
   if (!secret) {
     throw new AppError('Configuração de JWT inválida', 500);

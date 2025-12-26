@@ -10,7 +10,6 @@ export class UserService {
   }
 
   async createUser(data: CreateUserDTO) {
-    // Validate onboarding journey
     if (!data.googleId && !data.password) {
       throw new AppError('Password is required for email registration', 400);
     }
@@ -48,9 +47,6 @@ export class UserService {
   }
 
   async deleteUser(id: string) {
-    // The repository/prisma will throw an error if the user is not found (P2025)
-    // which will be caught by the centralized error handler.
-    // This avoids a redundant SELECT call.
     return this.userRepository.delete(id);
   }
 }

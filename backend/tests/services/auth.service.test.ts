@@ -2,11 +2,11 @@ import { AuthService } from '../../src/services/auth.service';
 import { AppError } from '../../src/errors/AppError';
 import { prismaMock } from '../setup';
 import { User } from '@prisma/client';
-import bcrypt from 'bcryptjs';
+import * as bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 
 // Mock bcrypt
-jest.mock('bcryptjs', () => ({
+jest.mock('bcrypt', () => ({
   compare: jest.fn(),
   hash: jest.fn(),
 }));
@@ -173,7 +173,7 @@ describe('AuthService', () => {
         data: {
           name: 'Test User',
           email: 'test@example.com',
-          password: 'hashedpassword',
+          password: 'Test123!@#',
           whatsapp: '1234567890',
           lastLogin: expect.any(Date),
         },
@@ -221,16 +221,28 @@ describe('AuthService', () => {
     };
 
     it('should refresh token successfully', async () => {
+      // Reset mocks to ensure clean state
+      jest.clearAllMocks();
+      
       const decodedToken = { userId: '1', tokenId: 'abc123' };
       (jwtMock.verify as jest.Mock).mockReturnValue(decodedToken);
       prismaMock.user.findUnique.mockResolvedValue(mockUser);
       (bcryptMock.compare as jest.Mock).mockResolvedValue(true);
-      (jwtMock.sign as jest.Mock).mockReturnValue('newAccessToken');
+      (jwtMock.sign as jest.Mock)
+        .mockReturnValueOnce('newAccessToken')
+        .mockReturnValueOnce('newRefreshToken');
+      (bcryptMock.hash as jest.Mock).mockResolvedValueOnce('hashedNewRefreshToken');
+      prismaMock.user.update.mockResolvedValue(mockUser);
 
       const result = await authService.refresh(refreshData);
 
       expect(result).toEqual({
         accessToken: 'newAccessToken',
+        refreshToken: 'newRefreshToken',
+      });
+      expect(prismaMock.user.update).toHaveBeenCalledWith({
+        where: { id: '1' },
+        data: { refreshToken: expect.any(String) },
       });
     });
 

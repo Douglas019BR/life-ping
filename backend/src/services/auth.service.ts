@@ -1,4 +1,4 @@
-import bcrypt from 'bcryptjs';
+import * as bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { OAuth2Client } from 'google-auth-library';
 import { PrismaClient } from '@prisma/client';
@@ -80,13 +80,11 @@ export class AuthService {
       throw new AppError('WhatsApp já está em uso', 409);
     }
 
-    const hashedPassword = await bcrypt.hash(data.password, 12);
-
     const user = await this.prisma.user.create({
       data: {
         name: data.name,
         email: data.email,
-        password: hashedPassword,
+        password: data.password,
         whatsapp: data.whatsapp,
         lastLogin: new Date(),
       },
@@ -134,8 +132,14 @@ export class AuthService {
       }
 
       const accessToken = this.generateAccessToken(user.id, user.email);
+      const newRefreshToken = this.generateRefreshToken(user.id);
 
-      return { accessToken };
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { refreshToken: await bcrypt.hash(newRefreshToken, 10) },
+      });
+
+      return { accessToken, refreshToken: newRefreshToken };
     } catch (error) {
       throw new AppError('Token inválido', 401);
     }
@@ -155,7 +159,7 @@ export class AuthService {
         data: { refreshToken: null },
       });
     } catch (error) {
-      // Token inválido, mas logout deve sempre funcionar
+      // Invalid token, but the logout is always works
     }
   }
 
@@ -169,7 +173,7 @@ export class AuthService {
     await this.prisma.oAuthState.create({
       data: {
         state,
-        expiresAt: new Date(Date.now() + 15 * 60 * 1000), // 10 minutes
+        expiresAt: new Date(Date.now() + 15 * 60 * 1000), // 15 minutes
       },
     });
 
@@ -292,7 +296,14 @@ export class AuthService {
       };
     } catch (error) {
       if (error instanceof AppError) throw error;
-      console.error('Erro OAuth Google:', error);
+      if (process.env.NODE_ENV === 'production') {
+        console.error(
+          'Erro OAuth Google:',
+          error instanceof Error ? error.message : 'Unknown error'
+        );
+      } else {
+        console.error('Erro OAuth Google:', error);
+      }
       const message = error instanceof Error ? error.message : 'Erro desconhecido';
       throw new AppError(`Erro na autenticação com Google: ${message}`, 400);
     }
