@@ -46,7 +46,7 @@ Login com email e senha.
 ```
 
 ### POST /auth/refresh
-Renovar access token usando refresh token.
+Renovar access token usando refresh token. Por segurança, um novo refresh token também é gerado (rotação de tokens).
 
 **Request:**
 ```json

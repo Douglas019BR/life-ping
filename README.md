@@ -2,6 +2,13 @@
 
 Sistema automatizado de verificação diária de bem-estar com notificação de emergência via WhatsApp.
 
+## ⚠️ Pendências Técnicas
+
+### OAuth State Cleanup
+- **Problema**: Estados OAuth são criados na tabela `oAuthState` com expiração de 15 minutos, mas não há mecanismo de limpeza automática
+- **Impacto**: Acúmulo de registros expirados causará bloat no banco de dados
+- **Solução**: Implementar job agendado ou trigger para remover estados expirados periodicamente
+
 ## Visão Geral
 
 Aplicação que permite aos usuários cadastrarem contatos de emergência e receberem mensagens diárias de verificação de bem-estar. Em caso de necessidade de ajuda, o sistema notifica automaticamente os contatos de emergência cadastrados.
